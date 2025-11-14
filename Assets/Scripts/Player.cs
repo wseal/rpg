@@ -19,14 +19,17 @@ public class Player : MonoBehaviour
 
     [Header("Collision")]
     [SerializeField] private float groundCheckDistance;
-    [SerializeField] private bool IsGrounded;
     [SerializeField] private LayerMask WhatIsGround;
+    private bool IsGrounded = false;
+
+
+    private bool canMove = true;
+    private bool canJump = true;
 
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     void Awake()
     {
         rb = GetComponent<Rigidbody2D>();
-
         m_Animator = GetComponentInChildren<Animator>();
     }
 
@@ -45,6 +48,12 @@ public class Player : MonoBehaviour
         HandleAnimation();
     }
 
+    public void EnableJumpAndMovement(bool enable)
+    {
+        canJump = enable;
+        canMove = enable;
+    }
+
     // 50/s
     private void FixedUpdate()
     {
@@ -54,6 +63,9 @@ public class Player : MonoBehaviour
     void HandleCollision()
     {
         IsGrounded = Physics2D.Raycast(transform.position, Vector2.down, groundCheckDistance, WhatIsGround);
+
+        // IsGrounded = hit.collider != null;
+        // Debug.Log($"ground:{IsGrounded}:${hit.collider.ToString()}");
     }
 
     private void HandleInput()
@@ -61,13 +73,26 @@ public class Player : MonoBehaviour
         xInput = Input.GetAxisRaw("Horizontal");
         if (Input.GetKeyDown(KeyCode.Space))
         {
-            Jump();
+            TryToJump();
+        }
+
+        if (Input.GetKeyDown(KeyCode.Mouse0))
+        {
+            TryToAttack();
         }
     }
 
-    void Jump()
+    void TryToAttack()
     {
         if (IsGrounded)
+        {
+            m_Animator.SetTrigger("attack");
+        }
+    }
+
+    void TryToJump()
+    {
+        if (IsGrounded && canJump)
         {
             rb.linearVelocity = new Vector2(rb.linearVelocity.x, jumpForce);
         }
@@ -76,7 +101,22 @@ public class Player : MonoBehaviour
 
     private void HandleMovement()
     {
-        rb.linearVelocity = new Vector2(xInput * moveSpeed, rb.linearVelocityY);
+        if (canMove)
+            rb.linearVelocity = new Vector2(xInput * moveSpeed, rb.linearVelocityY);
+        else
+            rb.linearVelocity = new Vector2(0, rb.linearVelocityY);
+    }
+
+    private void HandleAnimation()
+    {
+        // var isMoving = rb.linearVelocityX != 0;
+        // if (isMoving != IsMoving)
+        // {
+        //     IsMoving = isMoving;
+        //     m_Animator.SetBool("IsMoving", IsMoving);
+        //     Debug.Log($"Set Animation :{IsMoving}");
+        // }
+
         if (rb.linearVelocityX > 0 && IsFlip || rb.linearVelocityX < 0 && !IsFlip)
         {
             IsFlip = !IsFlip;
@@ -85,17 +125,10 @@ public class Player : MonoBehaviour
             transform.Rotate(0, 180, 0);
             Debug.Log($"Flip Animation :{IsFlip}");
         }
-    }
 
-    private void HandleAnimation()
-    {
-        var isMoving = rb.linearVelocityX != 0;
-        if (isMoving != IsMoving)
-        {
-            IsMoving = isMoving;
-            m_Animator.SetBool("IsMoving", IsMoving);
-            Debug.Log($"Set Animation :{IsMoving}");
-        }
+        m_Animator.SetBool("isGrounded", IsGrounded);
+        m_Animator.SetFloat("xVelocity", rb.linearVelocityX);
+        m_Animator.SetFloat("yVelocity", rb.linearVelocityY);
     }
 
 
