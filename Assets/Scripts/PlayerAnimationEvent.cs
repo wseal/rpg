@@ -10,6 +10,8 @@ public class playerAnimationEvent : MonoBehaviour
     player = GetComponentInParent<Player>();
   }
 
+  public void DamageEnemies() => player.DamageEnemies();
+
   void AttackStarted()
   {
     Debug.Log("attack start...");
